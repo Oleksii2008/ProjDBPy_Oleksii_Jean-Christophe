@@ -5,6 +5,8 @@
 # 3) vérifier si la table existe
 # 4) afficher le contenu de la table si elle existe
 
+#test
+
 import mysql.connector
 from mysql.connector import Error
 
