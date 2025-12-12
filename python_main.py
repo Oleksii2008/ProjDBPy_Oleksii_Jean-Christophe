@@ -1,26 +1,23 @@
 # show_table.py
-# Programme simple pour :
-# 1) se connecter à la base MySQL "mydb"
-# 2) demander le nom d'une table
-# 3) vérifier si la table existe
-# 4) afficher le contenu de la table si elle existe
-
-#test
+# Programme pour gérer la base ProjDBPy :
+# - afficher contenu d'une table
+# - ajouter un joueur
+# - supprimer un joueur
 
 import mysql.connector
 from mysql.connector import Error
 
 # -----------------------------
-# Connexion à la base de données
+# Connexion à la base
 # -----------------------------
 def get_connection():
-    """Ouvre une connexion à la base mydb."""
+    """Ouvre une connexion à la base ProjDBPy."""
     try:
         conn = mysql.connector.connect(
-            host="127.0.0.1",   # comme dans HeidiSQL
-            user="root",        # utilisateur
-            password="root",    # mot de passe
-            database="mydb",    # nom du schéma
+            host="127.0.0.1",
+            user="root",
+            password="root",
+            database="ProjDBPy",
             port=3306
         )
         return conn
@@ -28,11 +25,11 @@ def get_connection():
         print("Erreur de connexion à MySQL :", e)
         return None
 
+
 # -----------------------------
-# Vérifier si la table existe
+# Vérifie si une table existe
 # -----------------------------
 def table_exists(conn, table_name):
-    """Retourne True si la table existe dans le schéma mydb."""
     sql = """
         SELECT COUNT(*)
         FROM information_schema.tables
@@ -40,61 +37,182 @@ def table_exists(conn, table_name):
           AND table_name = %s
     """
     cur = conn.cursor()
-    cur.execute(sql, ("mydb", table_name))
+    cur.execute(sql, ("ProjDBPy", table_name))
     (count,) = cur.fetchone()
     cur.close()
     return count == 1
 
+
 # -----------------------------
-# Afficher le contenu de la table
+# Afficher contenu d’une table
 # -----------------------------
 def show_table(conn, table_name):
-    """Affiche toutes les lignes de la table."""
     cur = conn.cursor()
-    # ATTENTION : ici on insère le nom de table directement dans la requête
-    # (ok pour un petit exercice en local)
     cur.execute(f"SELECT * FROM {table_name}")
 
-    # noms des colonnes
     column_names = [desc[0] for desc in cur.description]
-    print(" | ".join(column_names))
+    print("\n" + " | ".join(column_names))
 
-    # lignes
     for row in cur.fetchall():
-        # convertir tous les champs en string pour l'affichage
         print(" | ".join(str(v) for v in row))
 
     cur.close()
 
+
 # -----------------------------
-# Programme principal
+# Ajouter un joueur
+# -----------------------------
+def add_player(conn):
+    """Ajoute un nouveau joueur dans la table Players."""
+    cur = conn.cursor()
+
+    print("\n=== AJOUTER UN JOUEUR ===")
+
+    firstname = input("Prénom : ").strip()
+    lastname = input("Nom : ").strip()
+    team = input("Équipe (laisser vide si aucune) : ").strip() or None
+
+    height_input = input("Taille en mètres (ex: 1.95, laisser vide si inconnu) : ").strip()
+    height = float(height_input) if height_input else None
+
+    # Afficher liste des dunks
+    cur.execute("SELECT id, Description FROM Dunks")
+    dunks = cur.fetchall()
+
+    if not dunks:
+        print("⚠ Aucun dunk disponible. Ajoutez d'abord un dunk.")
+        cur.close()
+        return
+
+    print("\nDunks disponibles :")
+    for d in dunks:
+        print(f"{d[0]} : {d[1]}")
+
+    dunk_id_input = input("ID du dunk choisi : ").strip()
+    try:
+        dunk_id = int(dunk_id_input)
+    except ValueError:
+        print("ID invalide.")
+        cur.close()
+        return
+
+    # Insérer le joueur
+    sql = """
+        INSERT INTO Players (Firstname, Lastname, Team, Height, Dunks_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+
+    try:
+        cur.execute(sql, (firstname, lastname, team, height, dunk_id))
+        conn.commit()
+        print(f"\n✔ Joueur {firstname} {lastname} ajouté avec succès !\n")
+    except Exception as e:
+        print("Erreur lors de l'ajout :", e)
+        conn.rollback()
+
+    cur.close()
+
+
+# -----------------------------
+# Supprimer un joueur
+# -----------------------------
+def delete_player(conn):
+    """Supprime un joueur via son ID."""
+    cur = conn.cursor()
+
+    print("\n=== SUPPRIMER UN JOUEUR ===")
+
+    # Afficher joueurs
+    cur.execute("SELECT id, Firstname, Lastname FROM Players")
+    players = cur.fetchall()
+
+    if not players:
+        print("⚠ Aucun joueur trouvé.")
+        cur.close()
+        return
+
+    print("\nListe des joueurs :")
+    for p in players:
+        print(f"ID: {p[0]}  -  {p[1]} {p[2]}")
+
+    # ID du joueur
+    player_id_input = input("\nID du joueur à supprimer : ").strip()
+
+    try:
+        player_id = int(player_id_input)
+    except ValueError:
+        print("ID invalide.")
+        cur.close()
+        return
+
+    # Vérifier existence
+    cur.execute("SELECT COUNT(*) FROM Players WHERE id = %s", (player_id,))
+    (count,) = cur.fetchone()
+
+    if count == 0:
+        print("⚠ Aucun joueur avec cet ID.")
+        cur.close()
+        return
+
+    confirm = input("Confirmer suppression ? (oui/non) : ").strip().lower()
+    if confirm not in ("oui", "o", "yes", "y"):
+        print("Suppression annulée.")
+        cur.close()
+        return
+
+    # Suppression
+    try:
+        cur.execute("DELETE FROM Players WHERE id = %s", (player_id,))
+        conn.commit()
+        print("✔ Joueur supprimé avec succès !")
+    except Exception as e:
+        print("Erreur :", e)
+        conn.rollback()
+
+    cur.close()
+
+
+# -----------------------------
+# PROGRAMME PRINCIPAL
 # -----------------------------
 def main():
     conn = get_connection()
     if conn is None:
         return
 
-    print('Connexion réussie à "mydb".')
-    print('Tape le nom de la table à afficher (par ex. Dunks, Players, Judges).')
-    print('Écris "quit" pour sortir.\n')
+    print('\nConnexion réussie à "ProjDBPy".\n')
 
     while True:
-        table_name = input("Nom de la table: ").strip()
-        if table_name.lower() in ("quit", "exit"):
+        print("=== MENU ===")
+        print("1 - Afficher une table")
+        print("2 - Ajouter un joueur")
+        print("3 - Supprimer un joueur")
+        print("4 - Quitter")
+
+        choice = input("\nChoix : ").strip()
+
+        if choice == "1":
+            table_name = input("Nom de la table : ").strip()
+            if table_exists(conn, table_name):
+                show_table(conn, table_name)
+            else:
+                print("Table inexistante.\n")
+
+        elif choice == "2":
+            add_player(conn)
+
+        elif choice == "3":
+            delete_player(conn)
+
+        elif choice == "4":
             print("Au revoir.")
             break
 
-        if not table_name:
-            continue
-
-        if not table_exists(conn, table_name):
-            print(f'La table "{table_name}" n’existe pas dans mydb.\n')
         else:
-            print(f'\nContenu de la table "{table_name}":')
-            show_table(conn, table_name)
-            print()  # ligne vide pour lisibilité
+            print("Choix invalide.\n")
 
     conn.close()
+
 
 if __name__ == "__main__":
     main()
