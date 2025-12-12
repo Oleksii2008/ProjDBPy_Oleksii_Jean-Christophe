@@ -8,22 +8,22 @@ SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema ProjDBPy
 -- -----------------------------------------------------
-DROP SCHEMA IF EXISTS `mydb` ;
+DROP SCHEMA IF EXISTS `ProjDBPy` ;
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Schema ProjDBPy
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8 ;
-USE `mydb` ;
+CREATE SCHEMA IF NOT EXISTS `ProjDBPy` DEFAULT CHARACTER SET utf8 ;
+USE `ProjDBPy` ;
 
 -- -----------------------------------------------------
--- Table `mydb`.`Dunks`
+-- Table `ProjDBPy`.`Dunks`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Dunks` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Dunks` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Dunks` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Dunks` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `Description` VARCHAR(45) NOT NULL,
   `Average_rating` VARCHAR(45) NOT NULL,
@@ -33,11 +33,11 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`Players`
+-- Table `ProjDBPy`.`Players`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Players` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Players` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Players` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Players` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `Firstname` VARCHAR(45) NOT NULL,
   `Lastname` VARCHAR(45) NOT NULL,
@@ -49,18 +49,18 @@ CREATE TABLE IF NOT EXISTS `mydb`.`Players` (
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,
   CONSTRAINT `fk_Players_Dunks1`
     FOREIGN KEY (`Dunks_id`)
-    REFERENCES `mydb`.`Dunks` (`id`)
+    REFERENCES `ProjDBPy`.`Dunks` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`Judges`
+-- Table `ProjDBPy`.`Judges`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Judges` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Judges` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Judges` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Judges` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `Firstname` VARCHAR(45) NOT NULL,
   `Lastname` VARCHAR(45) NOT NULL,
@@ -71,11 +71,11 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`Rounds`
+-- Table `ProjDBPy`.`Rounds`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Rounds` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Rounds` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Rounds` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Rounds` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `Round_number` INT NOT NULL,
   `Dunks_id` INT NOT NULL,
@@ -84,18 +84,18 @@ CREATE TABLE IF NOT EXISTS `mydb`.`Rounds` (
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,
   CONSTRAINT `fk_Rounds_Dunks1`
     FOREIGN KEY (`Dunks_id`)
-    REFERENCES `mydb`.`Dunks` (`id`)
+    REFERENCES `ProjDBPy`.`Dunks` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`Concours`
+-- Table `ProjDBPy`.`Concours`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Concours` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Concours` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Concours` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Concours` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `Year` INT NOT NULL,
   `Place` VARCHAR(45) NOT NULL,
@@ -106,18 +106,18 @@ CREATE TABLE IF NOT EXISTS `mydb`.`Concours` (
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE,
   CONSTRAINT `fk_Concours_Rounds1`
     FOREIGN KEY (`Rounds_id`)
-    REFERENCES `mydb`.`Rounds` (`id`)
+    REFERENCES `ProjDBPy`.`Rounds` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`Judges_has_Dunks`
+-- Table `ProjDBPy`.`Judges_has_Dunks`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `mydb`.`Judges_has_Dunks` ;
+DROP TABLE IF EXISTS `ProjDBPy`.`Judges_has_Dunks` ;
 
-CREATE TABLE IF NOT EXISTS `mydb`.`Judges_has_Dunks` (
+CREATE TABLE IF NOT EXISTS `ProjDBPy`.`Judges_has_Dunks` (
   `Judges_id` INT NOT NULL,
   `Dunks_id` INT NOT NULL,
   `Rating` INT NOT NULL,
@@ -126,12 +126,12 @@ CREATE TABLE IF NOT EXISTS `mydb`.`Judges_has_Dunks` (
   INDEX `fk_Judges_has_Dunks_Judges_idx` (`Judges_id` ASC) VISIBLE,
   CONSTRAINT `fk_Judges_has_Dunks_Judges`
     FOREIGN KEY (`Judges_id`)
-    REFERENCES `mydb`.`Judges` (`id`)
+    REFERENCES `ProjDBPy`.`Judges` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_Judges_has_Dunks_Dunks1`
     FOREIGN KEY (`Dunks_id`)
-    REFERENCES `mydb`.`Dunks` (`id`)
+    REFERENCES `ProjDBPy`.`Dunks` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
