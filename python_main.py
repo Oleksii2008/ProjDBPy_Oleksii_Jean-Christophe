@@ -240,7 +240,7 @@ def delete_player(conn):
         print("⚠ Aucun joueur trouvé.")
         cur.close()
         return
-
+  
     print("\nListe des joueurs :")
     for p in players:
         print(f"ID: {p[0]}  -  {p[1]} {p[2]}")
