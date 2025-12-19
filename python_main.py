@@ -47,8 +47,14 @@ def table_exists(conn, table_name):
 # Afficher contenu d’une table
 # -----------------------------
 def show_table(conn, table_name):
+    """Affiche le contenu d'une table (SELECT *)."""
     cur = conn.cursor()
-    cur.execute(f"SELECT * FROM {table_name}")
+    try:
+        cur.execute(f"SELECT * FROM {table_name}")
+    except Exception as e:
+        print("Erreur :", e)
+        cur.close()
+        return
 
     column_names = [desc[0] for desc in cur.description]
     print("\n" + " | ".join(column_names))
@@ -57,7 +63,6 @@ def show_table(conn, table_name):
         print(" | ".join(str(v) for v in row))
 
     cur.close()
-
 
 # -----------------------------
 # Ajouter un joueur
@@ -112,6 +117,111 @@ def add_player(conn):
 
     cur.close()
 
+def update_player(conn):
+    """Modifie un joueur via son ID (champs au choix)."""
+    cur = conn.cursor()
+
+    print("\n=== MODIFIER UN JOUEUR ===")
+
+    # Afficher joueurs
+    cur.execute("SELECT id, Firstname, Lastname, Team, Height, Dunks_id FROM Players")
+    players = cur.fetchall()
+
+    if not players:
+        print("⚠ Aucun joueur trouvé.")
+        cur.close()
+        return
+
+    print("\nListe des joueurs :")
+    for p in players:
+        # p = (id, Firstname, Lastname, Team, Height, Dunks_id)
+        print(f"ID: {p[0]} - {p[1]} {p[2]} | Team: {p[3]} | Height: {p[4]} | DunkID: {p[5]}")
+
+    # ID du joueur
+    player_id_input = input("\nID du joueur à modifier : ").strip()
+    try:
+        player_id = int(player_id_input)
+    except ValueError:
+        print("ID invalide.")
+        cur.close()
+        return
+
+    # Récupérer données actuelles
+    cur.execute(
+        "SELECT Firstname, Lastname, Team, Height, Dunks_id FROM Players WHERE id = %s",
+        (player_id,)
+    )
+    row = cur.fetchone()
+    if row is None:
+        print("⚠ Aucun joueur avec cet ID.")
+        cur.close()
+        return
+
+    current_firstname, current_lastname, current_team, current_height, current_dunk_id = row
+
+    print("\nLaisser vide pour garder la valeur actuelle.\n")
+
+    firstname = input(f"Prénom [{current_firstname}] : ").strip() or current_firstname
+    lastname = input(f"Nom [{current_lastname}] : ").strip() or current_lastname
+
+    team_input = input(f"Équipe [{current_team}] (vide = garder, '-' = mettre NULL) : ").strip()
+    if team_input == "":
+        team = current_team
+    elif team_input == "-":
+        team = None
+    else:
+        team = team_input
+
+    height_input = input(f"Taille [{current_height}] (vide = garder, '-' = mettre NULL) : ").strip()
+    if height_input == "":
+        height = current_height
+    elif height_input == "-":
+        height = None
+    else:
+        try:
+            height = float(height_input)
+        except ValueError:
+            print("Taille invalide.")
+            cur.close()
+            return
+
+    # Proposer les dunks
+    cur.execute("SELECT id, Description FROM Dunks")
+    dunks = cur.fetchall()
+    if not dunks:
+        print("⚠ Aucun dunk disponible (impossible de modifier le dunk).")
+        dunk_id = current_dunk_id
+    else:
+        print("\nDunks disponibles :")
+        for d in dunks:
+            print(f"{d[0]} : {d[1]}")
+
+        dunk_input = input(f"ID du dunk [{current_dunk_id}] (vide = garder) : ").strip()
+        if dunk_input == "":
+            dunk_id = current_dunk_id
+        else:
+            try:
+                dunk_id = int(dunk_input)
+            except ValueError:
+                print("ID dunk invalide.")
+                cur.close()
+                return
+
+    sql = """
+        UPDATE Players
+        SET Firstname = %s, Lastname = %s, Team = %s, Height = %s, Dunks_id = %s
+        WHERE id = %s
+    """
+
+    try:
+        cur.execute(sql, (firstname, lastname, team, height, dunk_id, player_id))
+        conn.commit()
+        print("✔ Joueur modifié avec succès !")
+    except Exception as e:
+        print("Erreur lors de la modification :", e)
+        conn.rollback()
+
+    cur.close()
 
 # -----------------------------
 # Supprimer un joueur
@@ -186,32 +296,36 @@ def main():
         print("=== MENU ===")
         print("1 - Afficher une table")
         print("2 - Ajouter un joueur")
-        print("3 - Supprimer un joueur")
-        print("4 - Quitter")
+        print("3 - Modifier un joueur")
+        print("4 - Supprimer un joueur")
+        print("5 - Quitter")
 
         choice = input("\nChoix : ").strip()
 
         if choice == "1":
             table_name = input("Nom de la table : ").strip()
-            if table_exists(conn, table_name):
-                show_table(conn, table_name)
+            if not table_exists(conn, table_name):
+                print("⚠ Cette table n'existe pas.")
             else:
-                print("Table inexistante.\n")
+                show_table(conn, table_name)
 
         elif choice == "2":
             add_player(conn)
 
         elif choice == "3":
-            delete_player(conn)
+            update_player(conn)
 
         elif choice == "4":
-            print("Au revoir.")
+            delete_player(conn)
+
+        elif choice == "5":
             break
 
         else:
-            print("Choix invalide.\n")
+            print("Choix invalide.")
 
     conn.close()
+    print("Au revoir.")
 
 
 if __name__ == "__main__":
