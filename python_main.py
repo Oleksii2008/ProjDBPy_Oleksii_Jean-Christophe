@@ -4,215 +4,100 @@
 # - ajouter un joueur
 # - supprimer un joueur
 
-import mysql.connector
-from mysql.connector import Error
+from tkinter import *
+import tkinter as tk
+from PIL import Image, ImageTk
+from python_display import Page1, Page2, Page3, Page4, Page5, Page6
+from python_database import Database
+import os
 
-# -----------------------------
-# Connexion à la base
-# -----------------------------
-def get_connection():
-    """Ouvre une connexion à la base ProjDBPy."""
-    try:
-        conn = mysql.connector.connect(
-            host="127.0.0.1",
-            user="root",
-            password="root",
-            database="ProjDBPy",
-            port=3306
-        )
-        return conn
-    except Error as e:
-        print("Erreur de connexion à MySQL :", e)
-        return None
+DB_config = {
+            "host": "127.0.0.1",
+            "user": "root",
+            "password": os.getenv("DB_password"),
+            "database": "dunk_contest",
+            "port": 3306
+        }
 
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Événement NBA")
 
-# -----------------------------
-# Vérifie si une table existe
-# -----------------------------
-def table_exists(conn, table_name):
-    sql = """
-        SELECT COUNT(*)
-        FROM information_schema.tables
-        WHERE table_schema = %s
-          AND table_name = %s
-    """
-    cur = conn.cursor()
-    cur.execute(sql, ("ProjDBPy", table_name))
-    (count,) = cur.fetchone()
-    cur.close()
-    return count == 1
+        window_width = 700
+        window_height = 467
 
+        self.geometry(f"{window_width}x{window_height}")
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x_left = int(screen_width / 2 - window_width / 2)
+        y_top = int(screen_height / 2 - window_height / 2)
+        self.geometry("+{}+{}".format(x_left, y_top))
 
-# -----------------------------
-# Afficher contenu d’une table
-# -----------------------------
-def show_table(conn, table_name):
-    cur = conn.cursor()
-    cur.execute(f"SELECT * FROM {table_name}")
+        self.db = Database(DB_config)
 
-    column_names = [desc[0] for desc in cur.description]
-    print("\n" + " | ".join(column_names))
+        self.bg_image1 = ImageTk.PhotoImage(Image.open("slamdunk_0.png"))
 
-    for row in cur.fetchall():
-        print(" | ".join(str(v) for v in row))
+        bg_image2 = Image.open("1_7OmCmTMBu1adOhD6vP9BFw.jpg")
+        bg_image2 = bg_image2.resize((700, 467), Image.LANCZOS)  # Redimensionner
+        self.bg_image2 = ImageTk.PhotoImage(bg_image2)
 
-    cur.close()
+        bg_image3 = Image.open("north-americas-all-time-best-nba-players.jpg")
+        bg_image3 = bg_image3.resize((700, 467), Image.LANCZOS)  # Redimensionner
+        self.bg_image3 = ImageTk.PhotoImage(bg_image3)
 
+        bg_image4 = Image.open("360_F_346562502_uyFXtYg06IOPPtlhiHyeBlI3SBCgOSz8.jpg")
+        bg_image4 = bg_image4.resize((700, 467), Image.LANCZOS)  # Redimensionner
+        self.bg_image4 = ImageTk.PhotoImage(bg_image4)
 
-# -----------------------------
-# Ajouter un joueur
-# -----------------------------
-def add_player(conn):
-    """Ajoute un nouveau joueur dans la table Players."""
-    cur = conn.cursor()
+        bg_image5 = Image.open("R.jpg")
+        bg_image5 = bg_image5.resize((700, 467), Image.LANCZOS)  # Redimensionner
+        self.bg_image5 = ImageTk.PhotoImage(bg_image5)
 
-    print("\n=== AJOUTER UN JOUEUR ===")
+        self.page1 = Page1(self)
+        self.page2 = Page2(self)
+        self.page3 = Page3(self)
+        self.page4 = Page4(self)
+        self.page5 = Page5(self)
+        self.page6 = Page6(self)
 
-    firstname = input("Prénom : ").strip()
-    lastname = input("Nom : ").strip()
-    team = input("Équipe (laisser vide si aucune) : ").strip() or None
+        self.page1.pack(fill="both", expand=True)
 
-    height_input = input("Taille en mètres (ex: 1.95, laisser vide si inconnu) : ").strip()
-    height = float(height_input) if height_input else None
+    def afficher_page6(self):
+        self.page5.pack_forget()
+        self.page6.pack(fill="both", expand=True)
+        self.page6.refresh_display()
 
-    # Afficher liste des dunks
-    cur.execute("SELECT id, Description FROM Dunks")
-    dunks = cur.fetchall()
+    def afficher_page5(self):
+        self.page1.pack_forget()
+        self.page5.pack(fill="both", expand=True)
 
-    if not dunks:
-        print("⚠ Aucun dunk disponible. Ajoutez d'abord un dunk.")
-        cur.close()
-        return
+    def afficher_page4(self):
+        self.page1.pack_forget()
+        self.page4.pack(fill="both", expand=True)
 
-    print("\nDunks disponibles :")
-    for d in dunks:
-        print(f"{d[0]} : {d[1]}")
+    def afficher_page3(self):
+        self.page1.pack_forget()
+        self.page3.pack(fill="both", expand=True)
 
-    dunk_id_input = input("ID du dunk choisi : ").strip()
-    try:
-        dunk_id = int(dunk_id_input)
-    except ValueError:
-        print("ID invalide.")
-        cur.close()
-        return
+    def afficher_page2(self):
+        self.page1.pack_forget()
+        self.page2.pack(fill="both", expand=True)
 
-    # Insérer le joueur
-    sql = """
-        INSERT INTO Players (Firstname, Lastname, Team, Height, Dunks_id)
-        VALUES (%s, %s, %s, %s, %s)
-    """
+    def afficher_page1(self):
+        self.page5.pack_forget()
+        self.page4.pack_forget()
+        self.page3.pack_forget()
+        self.page2.pack_forget()
+        self.page1.pack(fill="both", expand=True)
 
-    try:
-        cur.execute(sql, (firstname, lastname, team, height, dunk_id))
-        conn.commit()
-        print(f"\n✔ Joueur {firstname} {lastname} ajouté avec succès !\n")
-    except Exception as e:
-        print("Erreur lors de l'ajout :", e)
-        conn.rollback()
-
-    cur.close()
-
-
-# -----------------------------
-# Supprimer un joueur
-# -----------------------------
-def delete_player(conn):
-    """Supprime un joueur via son ID."""
-    cur = conn.cursor()
-
-    print("\n=== SUPPRIMER UN JOUEUR ===")
-
-    # Afficher joueurs
-    cur.execute("SELECT id, Firstname, Lastname FROM Players")
-    players = cur.fetchall()
-
-    if not players:
-        print("⚠ Aucun joueur trouvé.")
-        cur.close()
-        return
-
-    print("\nListe des joueurs :")
-    for p in players:
-        print(f"ID: {p[0]}  -  {p[1]} {p[2]}")
-
-    # ID du joueur
-    player_id_input = input("\nID du joueur à supprimer : ").strip()
-
-    try:
-        player_id = int(player_id_input)
-    except ValueError:
-        print("ID invalide.")
-        cur.close()
-        return
-
-    # Vérifier existence
-    cur.execute("SELECT COUNT(*) FROM Players WHERE id = %s", (player_id,))
-    (count,) = cur.fetchone()
-
-    if count == 0:
-        print("⚠ Aucun joueur avec cet ID.")
-        cur.close()
-        return
-
-    confirm = input("Confirmer suppression ? (oui/non) : ").strip().lower()
-    if confirm not in ("oui", "o", "yes", "y"):
-        print("Suppression annulée.")
-        cur.close()
-        return
-
-    # Suppression
-    try:
-        cur.execute("DELETE FROM Players WHERE id = %s", (player_id,))
-        conn.commit()
-        print("✔ Joueur supprimé avec succès !")
-    except Exception as e:
-        print("Erreur :", e)
-        conn.rollback()
-
-    cur.close()
-
-
-# -----------------------------
-# PROGRAMME PRINCIPAL
-# -----------------------------
-def main():
-    conn = get_connection()
-    if conn is None:
-        return
-
-    print('\nConnexion réussie à "ProjDBPy".\n')
-
-    while True:
-        print("=== MENU ===")
-        print("1 - Afficher une table")
-        print("2 - Ajouter un joueur")
-        print("3 - Supprimer un joueur")
-        print("4 - Quitter")
-
-        choice = input("\nChoix : ").strip()
-
-        if choice == "1":
-            table_name = input("Nom de la table : ").strip()
-            if table_exists(conn, table_name):
-                show_table(conn, table_name)
-            else:
-                print("Table inexistante.\n")
-
-        elif choice == "2":
-            add_player(conn)
-
-        elif choice == "3":
-            delete_player(conn)
-
-        elif choice == "4":
-            print("Au revoir.")
-            break
-
-        else:
-            print("Choix invalide.\n")
-
-    conn.close()
-
+    def on_closing(self):
+        """Ferme proprement la connexion MySQL"""
+        self.db.close()
+        self.destroy()
 
 if __name__ == "__main__":
-    main()
+    app = App()
+    app.protocol("WM_DELETE_WINDOW", app.on_closing)
+    app.mainloop()
+

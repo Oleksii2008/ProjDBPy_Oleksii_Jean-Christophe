@@ -1,9 +1,9 @@
-USE ProjDBPy;
+USE projdbpy;
 
 -- ============================
 -- TABLE: Dunks
 -- ============================
-INSERT INTO Dunks (Description, Average_rating) VALUES
+INSERT INTO Dunks (Description) VALUES
 ('Windmill Reverse', '9.2'),
 ('Between-the-legs', '9.5'),
 ('360 Spin', '9.0'),
