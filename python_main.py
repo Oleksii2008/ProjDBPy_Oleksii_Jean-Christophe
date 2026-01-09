@@ -1,13 +1,13 @@
-# show_table.py
-# Programme pour gérer la base ProjDBPy :
-# - afficher contenu d'une table
-# - ajouter un joueur
-# - supprimer un joueur
+'''
+Nom    : python_main.py
+Auteur : Jean-Christophe Serrano, Oleksii Kamarali
+Date   : 19.12.2025
+'''
 
 from tkinter import *
 import tkinter as tk
 from PIL import Image, ImageTk
-from python_display import Page1, Page2, Page3, Page4, Page5, Page6
+from python_display import Page1, Page2, Page3, Page4, Page5, Page6, Page7
 from python_database import Database
 import os
 
@@ -60,8 +60,14 @@ class App(tk.Tk):
         self.page4 = Page4(self)
         self.page5 = Page5(self)
         self.page6 = Page6(self)
+        self.page7 = Page7(self)
 
         self.page1.pack(fill="both", expand=True)
+
+    def afficher_page7(self):
+        self.page6.pack_forget()
+        self.page7.pack(fill="both", expand=True)
+        self.page7.refresh_display()
 
     def afficher_page6(self):
         self.page5.pack_forget()
@@ -71,6 +77,7 @@ class App(tk.Tk):
     def afficher_page5(self):
         self.page1.pack_forget()
         self.page5.pack(fill="both", expand=True)
+        self.page5.load_contests()
 
     def afficher_page4(self):
         self.page1.pack_forget()

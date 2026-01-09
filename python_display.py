@@ -921,3 +921,394 @@ class Page6(tk.Frame):
             self.master.afficher_page7()
         else:
             messagebox.showerror("Erreur", "Impossible de calculer les résultats")
+
+
+class Page7(tk.Frame):
+    """Page 7 - Round 2 (Finale)"""
+
+    def __init__(self, master):
+        super().__init__(master)
+
+        self.current_player_index = 0
+        self.current_attempt = 1
+
+        # Canvas pour le fond
+        self.canvas = tk.Canvas(self, width=700, height=467, highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
+
+        # Image de fond
+        self.canvas.create_image(0, 0, image=master.bg_image3, anchor="nw")
+
+        # Titre
+        self.canvas.create_text(350, 30,
+                                text="🏆 FINALE - ROUND 2 🏆",
+                                font=("Impact", 26, "bold"),
+                                fill="gold")
+
+        # Informations joueur actuel
+        self.lbl_player = tk.Label(self,
+                                   text="",
+                                   font=("Arial", 18, "bold"),
+                                   bg="#1a1a1a", fg="gold",
+                                   padx=20, pady=10)
+        self.canvas.create_window(350, 80, window=self.lbl_player)
+
+        # Numéro d'essai
+        self.lbl_attempt = tk.Label(self,
+                                    text="",
+                                    font=("Arial", 14, "bold"),
+                                    bg="#1a1a1a", fg="white")
+        self.canvas.create_window(350, 120, window=self.lbl_attempt)
+
+        # Sélection du type de dunk
+        self.canvas.create_text(350, 160,
+                                text="Type de dunk effectué :",
+                                font=("Arial", 12, "bold"),
+                                fill="white")
+
+        # Charger les dunks
+        dunks_data = master.db.get_all_dunks()
+        self.dunks_dict = {name: id for id, name in dunks_data}
+        dunk_names = [name for id, name in dunks_data]
+
+        self.combo_dunk = ttk.Combobox(self,
+                                       values=dunk_names,
+                                       font=("Arial", 11),
+                                       state="readonly",
+                                       width=30)
+        self.combo_dunk.set("Sélectionner un dunk...")
+        self.canvas.create_window(350, 190, window=self.combo_dunk)
+
+        # Notes des juges
+        self.canvas.create_text(350, 230,
+                                text="NOTES DES JUGES",
+                                font=("Arial", 14, "bold"),
+                                fill="gold")
+
+        # Juge 1
+        self.lbl_judge1 = tk.Label(self, text="Juge 1 :",
+                                   font=("Arial", 11, "bold"),
+                                   bg="#1a1a1a", fg="white")
+        self.canvas.create_window(200, 270, window=self.lbl_judge1)
+
+        self.spin_score1 = tk.Spinbox(self, from_=0, to=10, increment=0.5,
+                                      font=("Arial", 14, "bold"),
+                                      width=6)
+        self.spin_score1.delete(0, END)
+        self.spin_score1.insert(0, "0.0")
+        self.canvas.create_window(300, 270, window=self.spin_score1)
+
+        # Juge 2
+        self.lbl_judge2 = tk.Label(self, text="Juge 2 :",
+                                   font=("Arial", 11, "bold"),
+                                   bg="#1a1a1a", fg="white")
+        self.canvas.create_window(400, 270, window=self.lbl_judge2)
+
+        self.spin_score2 = tk.Spinbox(self, from_=0, to=10, increment=0.5,
+                                      font=("Arial", 14, "bold"),
+                                      width=6)
+        self.spin_score2.delete(0, END)
+        self.spin_score2.insert(0, "0.0")
+        self.canvas.create_window(500, 270, window=self.spin_score2)
+
+        # Moyenne
+        self.lbl_average = tk.Label(self,
+                                    text="Moyenne : 0.0",
+                                    font=("Arial", 16, "bold"),
+                                    bg="#1a1a1a", fg="yellow")
+        self.canvas.create_window(350, 320, window=self.lbl_average)
+
+        # Bouton calculer moyenne
+        btn_calc = tk.Button(self, text="Calculer la moyenne",
+                             command=self.calculer_moyenne,
+                             bg="blue", fg="white",
+                             font=("Arial", 11, "bold"))
+        self.canvas.create_window(350, 360, window=btn_calc)
+
+        # Bouton valider l'essai
+        self.btn_valider = tk.Button(self, text="✅ VALIDER CET ESSAI",
+                                     command=self.valider_essai,
+                                     bg="green", fg="white",
+                                     font=("Arial", 14, "bold"),
+                                     padx=30, pady=10)
+        self.canvas.create_window(350, 415, window=self.btn_valider)
+
+        # Progression
+        self.lbl_progress = tk.Label(self,
+                                     text="",
+                                     font=("Arial", 10),
+                                     bg="#1a1a1a", fg="lightgray")
+        self.canvas.create_window(350, 450, window=self.lbl_progress)
+
+    def refresh_display(self):
+        """Met à jour l'affichage pour le joueur et l'essai courant"""
+        print("🔍 Page7 - refresh_display() appelé")
+
+        if not hasattr(self.master, 'current_contest_id'):
+            print("❌ Pas de current_contest_id")
+            messagebox.showerror("Erreur", "Aucun concours sélectionné")
+            self.master.afficher_page5()
+            return
+
+        print(f"✅ Contest ID: {self.master.current_contest_id}")
+
+        # Charger les finalistes et juges
+        if not hasattr(self, 'finalists'):
+            print("📥 Chargement des finalistes...")
+            self.finalists = self.master.db.get_finalists(self.master.current_contest_id)
+            self.judges = self.master.db.get_contest_judges(self.master.current_contest_id)
+
+            print(f"✅ {len(self.finalists)} finalistes chargés")
+            print(f"✅ {len(self.judges)} juges chargés")
+
+            if len(self.finalists) != 2:
+                print(f"❌ Nombre de finalistes invalide: {len(self.finalists)}")
+                messagebox.showerror("Erreur",
+                                     f"Il faut exactement 2 finalistes.\n"
+                                     f"Actuellement : {len(self.finalists)} finaliste(s).\n\n"
+                                     f"Le Round 1 n'a peut-être pas été terminé correctement.")
+                self.master.afficher_page5()
+                return
+
+            if len(self.judges) != 2:
+                print(f"❌ Nombre de juges invalide: {len(self.judges)}")
+                messagebox.showerror("Erreur", "Le concours doit avoir exactement 2 juges")
+                self.master.afficher_page5()
+                return
+
+        # Joueur actuel (finaliste)
+        player = self.finalists[self.current_player_index]
+        player_id, firstname, lastname = player[:3]
+
+        print(f"👤 Finaliste actuel: {firstname} {lastname}")
+        print(f"📝 Essai: {self.current_attempt}/2")
+
+        self.lbl_player.config(text=f"🏀 {firstname} {lastname}")
+        self.lbl_attempt.config(text=f"Essai {self.current_attempt}/2")
+
+        # Afficher les noms des juges
+        judge1 = self.judges[0]
+        judge2 = self.judges[1]
+
+        print(f"👨‍⚖️ Juge 1: {judge1[1]} {judge1[2]}")
+        print(f"👨‍⚖️ Juge 2: {judge2[1]} {judge2[2]}")
+
+        self.lbl_judge1.config(text=f"{judge1[1]} {judge1[2]} :")
+        self.lbl_judge2.config(text=f"{judge2[1]} {judge2[2]} :")
+
+        # Progression
+        total_attempts = 2 * 2  # 2 finalistes × 2 essais
+        current = self.current_player_index * 2 + self.current_attempt
+        self.lbl_progress.config(text=f"🏆 Finale : {current}/{total_attempts} essais")
+
+        # Réinitialiser les champs
+        self.combo_dunk.set("Sélectionner un dunk...")
+        self.spin_score1.delete(0, END)
+        self.spin_score1.insert(0, "0.0")
+        self.spin_score2.delete(0, END)
+        self.spin_score2.insert(0, "0.0")
+        self.lbl_average.config(text="Moyenne : 0.0")
+
+        print("✅ Affichage mis à jour")
+
+    def calculer_moyenne(self):
+        """Calcule et affiche la moyenne des deux notes"""
+        try:
+            score1 = float(self.spin_score1.get())
+            score2 = float(self.spin_score2.get())
+
+            if score1 < 0 or score1 > 10 or score2 < 0 or score2 > 10:
+                messagebox.showerror("Erreur", "Les notes doivent être entre 0 et 10")
+                return
+
+            average = (score1 + score2) / 2
+            self.lbl_average.config(text=f"Moyenne : {average:.1f}")
+
+        except ValueError:
+            messagebox.showerror("Erreur", "Veuillez entrer des notes valides")
+
+    def valider_essai(self):
+        """Valide l'essai et enregistre dans la base de données"""
+        print("🔍 Validation de l'essai...")
+
+        # Vérifications
+        selected_dunk = self.combo_dunk.get()
+        if selected_dunk == "Sélectionner un dunk...":
+            messagebox.showwarning("Attention", "Veuillez sélectionner un type de dunk")
+            return
+
+        try:
+            score1 = float(self.spin_score1.get())
+            score2 = float(self.spin_score2.get())
+
+            if score1 < 0 or score1 > 10 or score2 < 0 or score2 > 10:
+                messagebox.showerror("Erreur", "Les notes doivent être entre 0 et 10")
+                return
+
+            average = (score1 + score2) / 2
+
+        except ValueError:
+            messagebox.showerror("Erreur", "Veuillez entrer des notes valides")
+            return
+
+        # Récupérer les infos
+        player = self.finalists[self.current_player_index]
+        player_id = player[0]
+        dunk_id = self.dunks_dict[selected_dunk]
+
+        print(f"💾 Enregistrement: Player {player_id}, Round 2, Essai {self.current_attempt}")
+
+        # Enregistrer l'essai
+        attempt_id = self.master.db.add_attempt(
+            self.master.current_contest_id,
+            player_id,
+            2,  # Round 2 (Finale)
+            self.current_attempt,
+            dunk_id,
+            average
+        )
+
+        if attempt_id:
+            print(f"✅ Essai enregistré avec ID: {attempt_id}")
+
+            # Enregistrer les notes des juges
+            judge1_id = self.judges[0][0]
+            judge2_id = self.judges[1][0]
+
+            self.master.db.add_score(attempt_id, judge1_id, score1)
+            self.master.db.add_score(attempt_id, judge2_id, score2)
+
+            print(f"✅ Notes enregistrées: {score1} et {score2}")
+
+            messagebox.showinfo("✅ Validé", f"Essai enregistré !\nMoyenne : {average:.1f}/10")
+
+            # Passer au suivant
+            self.next_attempt()
+        else:
+            print("❌ Échec de l'enregistrement de l'essai")
+
+    def next_attempt(self):
+        """Passe au prochain essai ou joueur"""
+        print(f"🔄 next_attempt() - Player {self.current_player_index}, Attempt {self.current_attempt}")
+
+        if self.current_attempt == 1:
+            # Passer au 2ème essai du même finaliste
+            self.current_attempt = 2
+            print("➡️ Passage à l'essai 2 du même joueur")
+            self.refresh_display()
+        else:
+            # Passer au finaliste suivant
+            self.current_attempt = 1
+            self.current_player_index += 1
+
+            print(f"➡️ Passage au joueur suivant (index: {self.current_player_index})")
+
+            if self.current_player_index >= 2:
+                # Round 2 terminé, calculer le gagnant
+                print("🎉 Finale terminée ! Calcul du gagnant...")
+                self.terminer_finale()
+            else:
+                self.refresh_display()
+
+    def terminer_finale(self):
+        """Termine la finale et détermine le gagnant"""
+        print("🏆 Calcul des résultats finaux...")
+
+        messagebox.showinfo("🎉 Finale terminée !",
+                            "Calcul du classement final en cours...")
+
+        # Calculer les moyennes finales
+        results = self.master.db.get_round2_results(self.master.current_contest_id)
+
+        print(f"📊 Résultats Round 2: {results}")
+
+        if len(results) >= 2:
+            # Le gagnant et le second
+            winner = results[0]
+            second = results[1]
+
+            print(f"🥇 Gagnant: {winner[1]} {winner[2]} - {winner[3]:.2f}")
+            print(f"🥈 Second: {second[1]} {second[2]} - {second[3]:.2f}")
+
+            # Mettre à jour les classements finaux
+            self.master.db.set_final_ranks(self.master.current_contest_id, winner[0], 1)
+            self.master.db.set_final_ranks(self.master.current_contest_id, second[0], 2)
+
+            # Récupérer les 2 autres joueurs (éliminés en demi)
+            all_players = self.master.db.get_contest_players(self.master.current_contest_id)
+            round1_results = self.master.db.get_round1_results(self.master.current_contest_id)
+
+            # Trouver les 2 éliminés et leur assigner les rangs 3 et 4
+            rank = 3
+            for player in round1_results:
+                player_id = player[0]
+                # Si le joueur n'est pas dans les 2 premiers
+                if player_id not in [winner[0], second[0]]:
+                    self.master.db.set_final_ranks(self.master.current_contest_id, player_id, rank)
+                    rank += 1
+
+            # Afficher le podium
+            self.afficher_podium(winner, second, round1_results)
+
+        else:
+            print("❌ Impossible de calculer les résultats")
+            messagebox.showerror("Erreur", "Impossible de calculer les résultats de la finale")
+
+    def afficher_podium(self, winner, second, all_results):
+        """Affiche le podium final"""
+
+        # Trouver les 3ème et 4ème
+        third = None
+        fourth = None
+
+        for player in all_results:
+            player_id = player[0]
+            if player_id not in [winner[0], second[0]]:
+                if third is None:
+                    third = player
+                else:
+                    fourth = player
+
+        # Message du podium
+        podium_msg = "🏆 CLASSEMENT FINAL 🏆\n\n"
+        podium_msg += f"🥇 1ER : {winner[1]} {winner[2]}\n"
+        podium_msg += f"   Moyenne finale : {winner[3]:.2f}/10\n\n"
+
+        podium_msg += f"🥈 2ÈME : {second[1]} {second[2]}\n"
+        podium_msg += f"   Moyenne finale : {second[3]:.2f}/10\n\n"
+
+        if third:
+            podium_msg += f"🥉 3ÈME : {third[1]} {third[2]}\n"
+            podium_msg += f"   Moyenne Round 1 : {third[3]:.2f}/10\n\n"
+
+        if fourth:
+            podium_msg += f"4ÈME : {fourth[1]} {fourth[2]}\n"
+            podium_msg += f"   Moyenne Round 1 : {fourth[3]:.2f}/10\n\n"
+
+        podium_msg += f"\n🎊 Félicitations à {winner[1]} {winner[2]} ! 🎊"
+
+        # Afficher le podium
+        result = messagebox.askquestion("🏆 CONCOURS TERMINÉ",
+                                        podium_msg + "\n\nRetourner au menu principal ?",
+                                        icon='info')
+
+        if result == 'yes':
+            # Réinitialiser la page
+            if hasattr(self, 'finalists'):
+                delattr(self, 'finalists')
+            if hasattr(self, 'judges'):
+                delattr(self, 'judges')
+
+            self.current_player_index = 0
+            self.current_attempt = 1
+
+            # Retourner au menu
+            self.master.afficher_page1()
+        else:
+            # Rester sur cette page (afficher les stats ?)
+            messagebox.showinfo("Statistiques",
+                                "Fonctionnalité à venir :\n"
+                                "- Voir tous les essais\n"
+                                "- Meilleur dunk du concours\n"
+                                "- Export des résultats")
+            self.master.afficher_page1()
